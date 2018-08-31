@@ -5,7 +5,7 @@ import pdb
 
 from scipy.stats import mode
 from scipy.spatial.distance import cdist
-from time_series.models.utils import classify_sample
+from ecg_AAAI.models.utils import classify_sample
 
 
 # Input sequence of embedded representations of adjacent beats
