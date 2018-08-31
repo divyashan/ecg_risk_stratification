@@ -22,7 +22,7 @@ def build_fc_model( img_shape):
 
 	raw_x = x0
 	flattened_raw_x = Flatten()(raw_x)
-	fc0 = Dense( num_fc_0, activation='relu', name='fully_informed_nodes', kernel_initializer=initializer,
+	fc0 = Dense( num_fc_0, activation='relu', name='fc_1', kernel_initializer=initializer,
 				kernel_regularizer=l2(.001) )(flattened_raw_x)
 
 	fc1 = Dense( num_fc_1, activation='relu', name='dense_encoding', kernel_initializer=initializer,
