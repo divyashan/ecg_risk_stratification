@@ -17,7 +17,6 @@ import keras.backend as K
 
 import matplotlib.pyplot as plt
 from sklearn.neighbors import NearestNeighbors
-from sklearn.metrics import roc_auc_score
 
 sys.path.insert(0, '../')
 from ecg_AAAI.parse_dataset.readECG import loadECG
@@ -25,7 +24,7 @@ from ecg_AAAI.models.ecg_utils import get_all_adjacent_beats
 from ecg_AAAI.models.supervised.ecg_fi_model_keras import build_fi_model 
 from ecg_AAAI.models.supervised.ecg_fc import build_fc_model
 from ecg_AAAI.models.gpu_utils import restrict_GPU_keras
-
+from ecg_AAAI.models.eval import evaluate_AUC, evaluate_HR
 restrict_GPU_keras("0")
 
 """Hyperparameters"""
@@ -33,19 +32,6 @@ num_fc_1 = 2       #Number of neurons in fully connected layer
 num_fc_0 = 2
 max_iterations = 4000
 n_classes = 2
-
-def evaluate(model, patients, patient_labels, threshold=.5):
-	scores = []
-	for patient_beats in patients: 
-		aa = np.expand_dims(patient_beats[:,2:], 2)
-		output = model.predict(aa)
-		pred_y = [1 if v > threshold else 0 for v in output]
-		pid_score = np.mean(pred_y)
-		#pid_score = np.mean(output)
-		scores.append(pid_score)
-
-	auc_val = roc_auc_score(patient_labels, scores)
-	return scores, auc_val
 
 train_normal_ids = [1.0, 10.0, 100.0, 1001.0, 1002.0, 1003.0, 1004.0, 1005.0, 1006.0, 1007.0, 1008.0, 1009.0, 101.0, 1010.0, 1011.0, 1012.0, 1014.0, 1015.0, 1016.0, 1017.0, 1018.0, 1019.0, 102.0, 1020.0, 1021.0, 1022.0, 1023.0, 1024.0, 1025.0, 1026.0, 1027.0, 1028.0, 1029.0, 103.0, 104.0, 1047.0, 1048.0, 1049.0, 105.0, 1051.0, 1052.0, 1053.0, 1054.0, 1055.0, 1056.0, 1057.0, 1058.0, 1059.0, 106.0, 1060.0, 1061.0, 1062.0, 1063.0, 1064.0, 1065.0, 1066.0, 1067.0, 1069.0, 107.0, 1070.0, 1071.0, 1072.0, 1073.0, 1075.0, 1076.0, 108.0, 1086.0, 1088.0, 1089.0, 109.0, 1090.0, 1091.0, 1092.0, 1093.0, 1094.0, 1095.0, 11.0, 110.0, 1104.0, 1105.0]
 train_death_ids = [10171.0, 10239.0, 1031.0, 10395.0, 10422.0, 1050.0, 10502.0, 1087.0, 1125.0, 1136.0, 1175.0, 1189.0, 1197.0, 1241.0, 1273.0, 1413.0, 1515.0, 1630.0, 1646.0, 1698.0, 1710.0, 1720.0, 1726.0, 1741.0, 1763.0, 1816.0, 1921.0, 1931.0, 1938.0, 2036.0, 2236.0, 2252.0, 2317.0, 2343.0, 2388.0, 2438.0, 2484.0, 2617.0, 2628.0, 2635.0, 2718.0, 2785.0, 2899.0, 3046.0, 3053.0, 3216.0, 3232.0, 3245.0, 3277.0, 3319.0, 3348.0, 3350.0, 3525.0, 3541.0, 3548.0, 3570.0, 3596.0, 3617.0, 3630.0, 3792.0, 3797.0, 3865.0, 3875.0, 3991.0, 4000.0, 4128.0, 4153.0, 4210.0, 4249.0, 4353.0, 4381.0, 4383.0, 4467.0, 4516.0, 4659.0, 4740.0, 4763.0, 48.0, 4844.0, 4879.0]
