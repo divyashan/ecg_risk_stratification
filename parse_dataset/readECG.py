@@ -1,0 +1,94 @@
+import os
+import pdb
+import h5py
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+
+
+DATASET_DIR = "../jiffy_experiments/adjacent_beats/"
+
+def get_dataset_path(pid):
+	return DATASET_DIR + "patient_" + str(pid) + ".csv"
+
+def get_f_path(pid, folder):
+	f_path_poss =  "./datasets/adjacent_beats/" + folder + "/patient_" + str(int(pid)) + ".0.csv"
+	f_path = None
+	if os.path.isfile(f_path_poss):
+		f_path = f_path_poss
+	return f_path
+
+def loadECG(train_normal, train_death, test_normal, test_death):
+	train_normal_patients = train_normal[:10]
+	train_death_patients = train_death[:10]
+	test_normal_patients = test_normal[:10]
+	test_death_patients = test_death[:10]
+
+
+	train_death_list = []
+	test_death_list = []
+	train_normal_list = []
+	test_normal_list = []
+
+
+	print len(train_death_patients), len(test_death_patients), len(train_normal_patients), len(test_normal_patients)
+	for pid in train_death_patients:
+		f_path = get_f_path(pid, "death")
+		if not f_path:
+			print "Couldn't find: ", pid
+			continue
+		pid_mat = pd.read_csv(f_path, delim_whitespace=True).values
+		train_death_list.append(pid_mat[:1000])
+
+	for pid in test_death_patients:
+		f_path = get_f_path(pid, "death")
+		if not f_path:
+			print "Couldn't find: ", pid
+			continue
+		pid_mat = pd.read_csv(f_path, delim_whitespace=True).values
+		test_death_list.append(pid_mat[:1000])
+	
+	for pid in train_normal_patients:
+		f_path = get_f_path(pid, "normal")
+		if not f_path:
+			print "Couldn't find: ", pid
+			continue
+		pid_mat = pd.read_csv(f_path, delim_whitespace=True).values
+		train_normal_list.append(pid_mat[:1000])
+
+	for pid in test_normal_patients:
+		f_path = get_f_path(pid, "normal")
+		if not f_path:
+			print "Couldn't find: ", pid
+			continue
+		pid_mat = pd.read_csv(f_path, delim_whitespace=True).values
+		test_normal_list.append(pid_mat[:1000])
+
+	train_death_list = np.concatenate(train_death_list)
+	train_normal_list = np.concatenate(train_normal_list)
+
+	test_death = np.concatenate(test_death_list)
+	test_normal = np.concatenate(test_normal_list)
+	test_x_list = test_death_list + test_normal_list
+	test_y_list = [1 for x in range(len(test_death_list))] + [0 for x in range(len(test_normal_list))]
+
+	train = np.concatenate([train_death_list, train_normal_list], axis=0)
+	test = np.concatenate([test_death, test_normal], axis=0)
+	
+	X_train, y_train = train[:,2:], train[:,1]
+	X_test, y_test = test[:,2:], test[:,1]
+	
+	X_train = np.expand_dims(X_train, 1)
+	X_test = np.expand_dims(X_test, 1)
+	
+	if not os.path.isfile("data.h5"):
+		dbfile = h5py.File("data.h5", "w")
+		dbfile.create_dataset("X_train", data=X_train)
+		dbfile.create_dataset("X_test", data=X_test)
+		dbfile.create_dataset("y_train", data=y_train)
+		dbfile.create_dataset("y_test", data=y_test)
+		dbfile.create_dataset("test_patients", data=test_x_list)
+		dbfile.create_dataset("test_patient_labels", data=test_y_list)
+		dbfile.close()
+
+	return X_train, y_train, X_test, y_test, 
