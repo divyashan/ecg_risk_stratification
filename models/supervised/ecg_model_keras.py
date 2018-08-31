@@ -24,7 +24,7 @@ from ecg_AAAI.models.ecg_utils import get_all_adjacent_beats
 from ecg_AAAI.models.supervised.ecg_fi_model_keras import build_fi_model 
 from ecg_AAAI.models.supervised.ecg_fc import build_fc_model
 from ecg_AAAI.models.gpu_utils import restrict_GPU_keras
-from ecg_AAAI.models.eval import evaluate_AUC, evaluate_HR
+from ecg_AAAI.models.supervised.eval import evaluate_AUC, evaluate_HR, risk_scores
 restrict_GPU_keras("0")
 
 """Hyperparameters"""
@@ -45,15 +45,15 @@ m.summary()
 
 # Load data
 if os.path.isfile("data.h5"):
-	hf = h5py.File('data.h5', 'r')
-	X_train = np.array(hf.get('X_train'))
-	y_train = np.array(hf.get('y_train'))
-	X_test = np.array(hf.get('X_test'))
-	y_test = np.array(hf.get('y_test')) 
-	test_patients = np.array(hf.get('test_patients'))
-	test_patient_labels = np.array(hf.get('test_patient_labels'))
+    hf = h5py.File('data.h5', 'r')
+    X_train = np.array(hf.get('X_train'))
+    y_train = np.array(hf.get('y_train'))
+    X_test = np.array(hf.get('X_test'))
+    y_test = np.array(hf.get('y_test')) 
+    test_patients = np.array(hf.get('test_patients'))
+    test_patient_labels = np.array(hf.get('test_patient_labels'))
 else:
-	X_train, y_train, X_test, y_test = loadECG(train_normal_ids, train_death_ids, test_normal_ids, test_death_ids)
+    X_train, y_train, X_test, y_test = loadECG(train_normal_ids, train_death_ids, test_normal_ids, test_death_ids)
 
 # Pre-process data
 X_train = np.swapaxes(X_train, 1, 2)
@@ -76,14 +76,14 @@ y_val = y_test[:30000]
 #y_test = y_test[np.where(y_test == 1)[0]]
 print("loaded data")
 for i in range(400):
-	# Using a neural network
-	m.fit(x=X_train, y=y_train, validation_data=(X_val, y_val), epochs=2, verbose=True)
-	test_embedding = embedding_m.predict(X_test)
-	train_embedding = embedding_m.predict(X_train)
-	nbrs = NearestNeighbors(n_neighbors=1, algorithm='ball_tree').fit(train_embedding)
-	_, indices = nbrs.kneighbors(test_embedding)
-	pdb.set_trace()
-	
-	scores, auc_val = evaluate(m, test_patients, test_patient_labels)
-
+    # Using a neural network
+    m.fit(x=X_train, y=y_train, validation_data=(X_val, y_val), epochs=1, verbose=True)
+    test_embedding = embedding_m.predict(X_test)
+    train_embedding = embedding_m.predict(X_train)
+    nbrs = NearestNeighbors(n_neighbors=1, algorithm='ball_tree').fit(train_embedding)
+    _, indices = nbrs.kneighbors(test_embedding)
+    pdb.set_trace()
+    scores = risk_scores(m, test_patients)
+    auc_val = evaluate_AUC(scores, test_patient_labels)
+    hr = evaluate_HR(scores, test_patients, test_patient_labels)
 print("lol")
