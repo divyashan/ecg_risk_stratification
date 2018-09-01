@@ -82,8 +82,10 @@ for i in range(400):
     train_embedding = embedding_m.predict(X_train)
     nbrs = NearestNeighbors(n_neighbors=1, algorithm='ball_tree').fit(train_embedding)
     _, indices = nbrs.kneighbors(test_embedding)
-    pdb.set_trace()
+    
     scores = risk_scores(m, test_patients)
     auc_val = evaluate_AUC(scores, test_patient_labels)
     hr = evaluate_HR(scores, test_patients, test_patient_labels)
+    pdb.set_trace()
+
 print("lol")

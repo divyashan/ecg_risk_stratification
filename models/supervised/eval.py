@@ -1,8 +1,10 @@
 import numpy as np
+import pandas as pd
+import pdb
+
 from lifelines import CoxPHFitter
 from sklearn.metrics import roc_auc_score
 from scipy.io import loadmat
-
 
 def risk_scores(model, patients, threshold=.5):
     scores = []
@@ -20,7 +22,7 @@ def evaluate_AUC(scores, patient_labels):
     return auc_val
 
 def evaluate_HR(scores, patients, patient_labels):
-    outcome_mat = loadmat("./datasets/patient_outcome.mat")['outcomes']
+    outcome_mat = loadmat("./datasets/patient_outcomes.mat")['outcomes']
     survival_dict = {x[0]: x[4] for x in outcome_mat}
     df_list = []
     for risk_score, patient, outcome in zip(scores, patients, patient_labels):
@@ -28,11 +30,12 @@ def evaluate_HR(scores, patients, patient_labels):
         death_date = survival_dict[pid]
         patient_dict = {'risk': risk_score, 'pid': pid, 
                         'death': outcome, 'days_survived': death_date}
-
-    pdb.set_trace()
+	df_list.append(patient_dict)
+    patient_df = pd.DataFrame(df_list)
     cph = CoxPHFitter()
-    cph.fit(rossi_dataset, duration_col='days_survived', event_col='death')
-    return cph._hazard_ratio
+    m = cph.fit(patient_df, duration_col='days_survived', event_col='death')
+    
+    return np.exp(m.hazards_['risk'][0])
 
 
     
