@@ -13,7 +13,7 @@ import numpy as np
 import pdb
 import os
 
-num_fc_1 = 5       #Number of neurons in fully connected layer
+num_fc_1 = 2       #Number of neurons in fully connected layer
 num_fc_0 = 2
 
 def build_fc_model( img_shape):
@@ -29,5 +29,6 @@ def build_fc_model( img_shape):
 				 kernel_regularizer=l2(.001) )(fc0)
 	y = Dense(1, name='softmax', activation='sigmoid')(fc1)
 	embedding_model = Model(inputs = x0, outputs = fc1)
+	#embedding_model = Model(inputs = x0, outputs=fc0)
 	model = Model( inputs = x0, outputs = y )
 	return model, embedding_model
