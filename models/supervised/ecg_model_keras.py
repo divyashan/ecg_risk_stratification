@@ -50,10 +50,12 @@ if os.path.isfile("data.h5"):
     y_train = np.array(hf.get('y_train'))
     X_test = np.array(hf.get('X_test'))
     y_test = np.array(hf.get('y_test')) 
-    test_patients = np.array(hf.get('test_patients'))
-    test_patient_labels = np.array(hf.get('test_patient_labels'))
+
+    test_hf = h5py.File('test_patients.h5', 'r')
+    test_patients = np.array(test_hf.get('test_patients'))
+    test_patient_labels = np.array(test_hf.get('test_patient_labels'))
 else:
-    X_train, y_train, X_test, y_test = loadECG(train_normal_ids, train_death_ids, test_normal_ids, test_death_ids)
+    X_train, y_train, X_test, y_test, test_patients, test_patient_labels = loadECG(train_normal_ids, train_death_ids, test_normal_ids, test_death_ids)
 
 # Pre-process data
 X_train = np.swapaxes(X_train, 1, 2)

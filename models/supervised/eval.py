@@ -7,6 +7,7 @@ from sklearn.metrics import roc_auc_score
 from scipy.io import loadmat
 
 def risk_scores(model, patients, threshold=.5):
+    pdb.set_trace()
     scores = []
     for patient_beats in patients: 
         aa = np.expand_dims(patient_beats[:,2:], 2)
@@ -30,7 +31,7 @@ def evaluate_HR(scores, patients, patient_labels):
         death_date = survival_dict[pid]
         patient_dict = {'risk': risk_score, 'pid': pid, 
                         'death': outcome, 'days_survived': death_date}
-	df_list.append(patient_dict)
+    df_list.append(patient_dict)
     patient_df = pd.DataFrame(df_list)
     cph = CoxPHFitter()
     m = cph.fit(patient_df, duration_col='days_survived', event_col='death')
