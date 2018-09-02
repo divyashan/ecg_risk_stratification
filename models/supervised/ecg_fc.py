@@ -13,8 +13,8 @@ import numpy as np
 import pdb
 import os
 
-num_fc_1 = 2       #Number of neurons in fully connected layer
 num_fc_0 = 2
+num_fc_1 = 5       #Number of neurons in fully connected layer
 
 def build_fc_model( img_shape):
 	initializer = glorot_normal()

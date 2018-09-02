@@ -46,27 +46,27 @@ if os.path.isfile("data.h5"):
 
     # Load X 
     if mode == "one_beat":     
-		x_file = h5py.File('one_beat.h5', 'r')
+	x_file = h5py.File('one_beat.h5', 'r')
     elif mode == "three_beat":
-		x_file = h5py.File('three_beat.h5', 'r')
+	x_file = h5py.File('three_beat.h5', 'r')
     else: 
-    	x_file = h5py.File('two_beat.h5', 'r')
+	x_file = h5py.File('two_beat.h5', 'r')
 
-	X_train = np.array(x_file.get('X_train'))
-	X_test = np.array(x_file.get('X_test')) 
+    X_train = np.array(x_file.get('X_train'))
+    X_test = np.array(x_file.get('X_test')) 
     x_file.close()
-
+    pdb.set_trace()
     # Load test patients
     test_hf = h5py.File('test_patients.h5', 'r')
     test_patients = np.array(test_hf.get('test_patients'))
     test_patient_labels = np.array(test_hf.get('test_patient_labels'))
+    test_hf.close()
 else:
     X_train, y_train, X_test, y_test, test_patients, test_patient_labels = loadECG(train_normal_ids, train_death_ids, test_normal_ids, test_death_ids)
 
 # Pre-process data
 X_train = np.swapaxes(X_train, 1, 2)
 X_test = np.swapaxes(X_test, 1, 2)
-
 new_order = np.arange(len(X_train))
 np.random.shuffle(new_order)
 X_train = X_train[new_order]
@@ -81,7 +81,8 @@ X_val = X_test[:30000]
 y_val = y_test[:30000]
 
 # Load model
-m, embedding_m = build_fc_model((256, 1))
+input_dim = X_train.shape[1]
+m, embedding_m = build_fc_model((input_dim, 1))
 m.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 m.summary()
 
