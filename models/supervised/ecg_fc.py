@@ -14,7 +14,6 @@ import pdb
 import os
 
 num_fc_0 = 2
-num_fc_1 = 5       #Number of neurons in fully connected layer
 
 def build_fc_model( img_shape):
 	initializer = glorot_normal()
@@ -22,11 +21,11 @@ def build_fc_model( img_shape):
 
 	raw_x = x0
 	flattened_raw_x = Flatten()(raw_x)
-	fc0 = Dense( num_fc_0, activation='relu', name='fc_1', kernel_initializer=initializer,
+	fc1 = Dense( num_fc_0, activation='relu', name='fc_1', kernel_initializer=initializer,
 				kernel_regularizer=l2(.001) )(flattened_raw_x)
 
-	fc1 = Dense( num_fc_1, activation='relu', name='dense_encoding', kernel_initializer=initializer,
-				 kernel_regularizer=l2(.001) )(fc0)
+	#fc1 = Dense( num_fc_1, activation='relu', name='dense_encoding', kernel_initializer=initializer,
+	#			 kernel_regularizer=l2(.001) )(fc0)
 	y = Dense(1, name='softmax', activation='sigmoid')(fc1)
 	embedding_model = Model(inputs = x0, outputs = fc1)
 	#embedding_model = Model(inputs = x0, outputs=fc0)
