@@ -86,8 +86,7 @@ m, embedding_m = build_fc_model((input_dim, 1))
 m.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 m.summary()
 
-#X_test = X_test[np.where(y_test == 1)[0]]
-#y_test = y_test[np.where(y_test == 1)[0]]
+
 print("loaded data")
 hrs = []
 discrete_hrs = []
@@ -95,16 +94,15 @@ auc_vals = []
 for i in range(400):
     # Using a neural network
     m.fit(x=X_train, y=y_train, validation_data=(X_val, y_val), epochs=10, verbose=True, batch_size=2000)
-    #test_embedding = embedding_m.predict(X_test)
-    #train_embedding = embedding_m.predict(X_train)
-    #nbrs = NearestNeighbors(n_neighbors=1, algorithm='ball_tree').fit(train_embedding)
-    #_, indices = nbrs.kneighbors(test_embedding)
-    
+ 	
+ 	test_patients = np.resize(X_test, (627, 1000, input_dim, 1))
     scores = risk_scores(m, test_patients)
-    discrete_scores = [1 if x > np.percentile(scores, 80) else 0 for x in scores]
+    discrete_scores = [1 if x > np.percentile(scores, 75) else 0 for x in scores]
+    
     auc_val = evaluate_AUC(scores, test_patient_labels)
     hr = evaluate_HR(scores, test_patients, test_patient_labels)
     discrete_hr = evaluate_HR(discrete_scores, test_patients, test_patient_labels)
+    
     auc_vals.append(auc_val)
     hrs.append(hr)
     discrete_hrs.append(hr)
