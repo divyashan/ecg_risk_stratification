@@ -41,6 +41,8 @@ if mode == "one_beat":
 	x_file = h5py.File('one_beat.h5', 'r')
 elif mode == "three_beat":
 	x_file = h5py.File('three_beat.h5', 'r')
+elif mode == 'four_beat':
+	x_file = h5py.File('four_beat.h5', 'r')
 else: 
 	x_file = h5py.File('two_beat.h5', 'r')
 
@@ -91,7 +93,8 @@ for i in range(40):
     auc_val = evaluate_AUC(scores, test_patient_labels)
     hr = evaluate_HR(scores, test_pids , test_patient_labels)
     discrete_hr = evaluate_HR(discrete_scores, test_pids, test_patient_labels)
-    
+    if hr[0] > 11:
+        pdb.set_trace()
     auc_vals.append(auc_val)
     hrs.append(hr)
     discrete_hrs.append(hr)

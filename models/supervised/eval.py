@@ -1,9 +1,13 @@
 import numpy as np
 import pandas as pd
 import pdb
+import matplotlib
+matplotlib.use('Agg')
 
+import matplotlib.pyplot as plt    
 from lifelines import CoxPHFitter
-from sklearn.metrics import roc_auc_score
+from lifelines import NelsonAalenFitter
+from sklearn.metrics import roc_auc_score, roc_curve, auc
 from scipy.io import loadmat
 
 def risk_scores(model, patients, threshold=.5):
@@ -19,6 +23,42 @@ def risk_scores(model, patients, threshold=.5):
 def evaluate_AUC(scores, patient_labels):
     auc_val = roc_auc_score(patient_labels, scores)
     return auc_val
+
+def plot_HR(df, with_ci=False):
+    T = df['days_survived']
+    E  = df['death']
+    naf = NelsonAalenFitter()
+
+    cutoff = np.percentile(df['risk'], 75)
+    high_risk = df['risk'] > cutoff
+   
+    naf.fit(T[high_risk], event_observed=E[high_risk], label='High_Risk')
+    ax = naf.plot(ci_show=with_ci)
+    naf.fit(T[~high_risk], event_observed=E[~high_risk], label='Low_Risk')
+    naf.plot(ax=ax,  ci_show=with_ci)
+    
+    plt.ylim(0, .1);
+    plt.xlabel("Days")
+    plt.ylabel("Risk of Death")
+    plt.title("Cardiovascular Death Risk over time (top quartile)")
+    if with_ci:
+        plt.savefig("./hr_with_ci.png")
+    else:
+        plt.savefig("./hr_without_ci.png")
+
+def plot_AUC(scores, patient_labels):
+    fpr, tpr, threshold =  roc_curve(patient_labels, scores)
+    roc_auc =  auc(fpr, tpr)
+    
+    plt.title('ROC (Receiver Operating Characteristic Curve)', fontdict={'fontsize': 'x-large'})
+    plt.plot(fpr, tpr, 'orange', label = 'ROC Curve (AUC = %0.2f)' % roc_auc)
+    plt.legend(loc = 'lower right', fontsize='large', frameon=False)
+    plt.plot([0, 1], [0, 1],'b--')
+    plt.xlim([0, 1])
+    plt.ylim([0, 1])
+    plt.ylabel('True Positive Rate')
+    plt.xlabel('False Positive Rate')
+    plt.savefig('./roc_auc_curve.png')
 
 def evaluate_HR(scores, pids, patient_labels, hr_days=90):
     outcome_mat = loadmat("./datasets/patient_outcomes.mat")['outcomes']
@@ -38,6 +78,8 @@ def evaluate_HR(scores, pids, patient_labels, hr_days=90):
 	    cph = CoxPHFitter()
 	    m = cph.fit(patient_df, duration_col='days_survived', event_col='death')
    	    hr_vals.append(np.exp(m.hazards_['risk'][0])) 
+	    if hr_days ==  90 and hr_vals[-1] > 12:
+                pdb.set_trace()
     return hr_vals
 
 
