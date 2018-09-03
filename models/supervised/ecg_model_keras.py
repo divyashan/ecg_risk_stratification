@@ -18,6 +18,7 @@ import keras.backend as K
 import matplotlib.pyplot as plt
 from sklearn.neighbors import NearestNeighbors
 from sklearn.metrics import roc_auc_score
+from sklearn.linear_model import LogisticRegresssion
 
 sys.path.insert(0, '../')
 from ecg_AAAI.parse_dataset.readECG import loadECG
@@ -29,6 +30,7 @@ from ecg_AAAI.models.supervised.eval import evaluate_AUC, evaluate_HR, risk_scor
 restrict_GPU_keras("0")
 
 mode = sys.argv[1]
+m_type = sys.argv[2]
 
 # Load Y
 hf = h5py.File('data.h5', 'r')
@@ -73,28 +75,30 @@ y_val = y_test[new_order][:3000]
 
 test_patients = np.resize(X_test, (627, 1000, input_dim, 1))
 
-# Load model
-m, embedding_m = build_fc_model((input_dim, 1))
-m.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
-m.summary()
-
-
 print("loaded data")
 hrs = []
 discrete_hrs = []
 auc_vals = []
 for i in range(40):
-    # Using a neural network
-    m.fit(x=X_train, y=y_train, validation_data=(X_val, y_val), epochs=10, verbose=False, batch_size=2000)
-	
+    if m_type == 'LR':     
+        # Using logistic regression
+        m = LogisticRegresssion()
+        m.fit(X_train, y_train)
+    else:
+        # Using a neural network
+        m, embedding_m = build_fc_model((input_dim, 1))
+        m.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+        m.summary()
+
+        m.fit(x=X_train, y=y_train, validation_data=(X_val, y_val), epochs=10, verbose=False, batch_size=2000)
+    	
     scores = risk_scores(m, test_patients)
     discrete_scores = [1 if x > np.percentile(scores, 75) else 0 for x in scores]
-    
+
     auc_val = evaluate_AUC(scores, test_patient_labels)
     hr = evaluate_HR(scores, test_pids , test_patient_labels)
     discrete_hr = evaluate_HR(discrete_scores, test_pids, test_patient_labels)
-    if hr[0] > 11:
-        pdb.set_trace()
+
     auc_vals.append(auc_val)
     hrs.append(hr)
     discrete_hrs.append(hr)
