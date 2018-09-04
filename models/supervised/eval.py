@@ -60,8 +60,7 @@ def plot_AUC(scores, patient_labels):
     plt.xlabel('False Positive Rate')
     plt.savefig('./roc_auc_curve.png')
 
-def evaluate_HR(outcome_mat, scores, pids, patient_labels, hr_days=90, mode="continuous"):
-    survival_dict = {x[0]: x[4] for x in outcome_mat}
+def evaluate_HR(survival_dict, scores, pids, patient_labels, hr_days=90, mode="continuous"):
     df_list = []
     for risk_score, pid, outcome in zip(scores, pids, patient_labels):
         death_date = survival_dict[pid]
@@ -69,7 +68,7 @@ def evaluate_HR(outcome_mat, scores, pids, patient_labels, hr_days=90, mode="con
                         'death': outcome, 'days_survived': death_date}
         df_list.append(patient_dict)
     patient_df = pd.DataFrame(df_list)
-    hr_days_opts = [90, 60, 30]
+    hr_days_opts = [90]
     hr_vals = []
     for hr_days in hr_days_opts:
 	    patient_df.loc[patient_df['days_survived'] > hr_days, 'death'] = 0

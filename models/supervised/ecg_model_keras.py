@@ -1,25 +1,13 @@
 import os
 import sys
-import math
 import h5py
-import numpy as np
 import pdb
-
-
-from keras.models import Model
-from keras.layers import Input, Flatten, Dense, Reshape, Lambda, Add
-from keras.layers.convolutional import Conv2D, UpSampling2D, Conv1D, MaxPooling1D
-from keras.layers.pooling import MaxPooling2D
-from keras.optimizers import SGD
-from keras.initializers import glorot_normal
-from keras.regularizers import l2
-import keras.backend as K
-
+import numpy as np
 import matplotlib.pyplot as plt
+
 from sklearn.neighbors import NearestNeighbors
 from sklearn.metrics import roc_auc_score
 from sklearn.linear_model import LogisticRegression
-
 from scipy.io import loadmat
 
 sys.path.insert(0, '../')
@@ -77,6 +65,8 @@ y_val = y_test[new_order][:3000]
 
 test_patients = np.resize(X_test, (627, 1000, input_dim, 1))
 patient_outcomes = loadmat("./datasets/patient_outcomes.mat")['outcomes'] 
+survival_dict = {x[0]: x[4] for x in patient_outcomes}
+
 print("loaded data")
 hrs = []
 discrete_hrs = []
@@ -84,18 +74,7 @@ auc_vals = []
 if m_type == 'LR':
     m = LogisticRegression()
     m.fit(np.squeeze(X_train, 2), y_train)
-else:
-    m, embedding_m = build_fc_model((input_dim, 1))
-    m.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
-
-for i in range(40):
-    if m_type == 'LR':     
-        # Using logistic regression
-        scores = risk_scores(m, [np.squeeze(x, 2) for x in test_patients])
-    else:
-        # Using a neural network
-        m.fit(x=X_train, y=y_train, validation_data=(X_val, y_val), epochs=10, verbose=False, batch_size=4000)	
-    	scores = risk_scores(m, test_patients)
+    scores = risk_scores(m, [np.squeeze(x, 2) for x in test_patients])
 
     discrete_scores = [1 if x > np.percentile(scores, 75) else 0 for x in scores]
 
@@ -106,11 +85,40 @@ for i in range(40):
     score_subset = scores[:600]
     labels_subset = test_patient_labels[:600]
     n_high_risk_death = np.sum(test_patient_labels[np.argsort(score_subset)][-157:])
-    print(n_high_risk_death) 
-    if n_high_risk_death > 9:
-        pdb.set_trace()
+
     auc_vals.append(auc_val)
     hrs.append(hr)
     discrete_hrs.append(discrete_hr)
-    print(auc_val, hr, discrete_hr) 
+
+    
+else:
+    m, embedding_m = build_fc_model((input_dim, 1))
+    m.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+    m.summary()
+    pdb.set_trace()
+    for i in range(40):
+        m.fit(x=X_train, y=y_train, validation_data=(X_val, y_val), epochs=10, verbose=False, batch_size=4000)	
+    	scores = risk_scores(m, test_patients)
+
+        discrete_scores = [1 if x > np.percentile(scores, 75) else 0 for x in scores]
+
+        scores = scores[:600]
+        test_patient_labels = test_patient_labels[:600]
+        test_pids = test_pids[:600]
+
+        auc_val = evaluate_AUC(scores, test_patient_labels)
+        hr = evaluate_HR(patient_outcomes, scores, test_pids , test_patient_labels, "continuous")
+        discrete_hr = evaluate_HR(survival_dict, discrete_scores, test_pids, test_patient_labels, "discrete")
+        
+        
+        n_high_risk_death = np.sum(test_patient_labels[np.argsort(scores)][-150:])
+
+        auc_vals.append(auc_val)
+        hrs.append(hr)
+        discrete_hrs.append(discrete_hr)
+
+        print(n_high_risk_death) 
+        print(auc_val, hr, discrete_hr)
+        if n_high_risk_death > 9:
+            pdb.set_trace() 
 pdb.set_trace()
