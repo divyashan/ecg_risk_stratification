@@ -31,7 +31,7 @@ def plot_HR(df, with_ci=False):
 
     cutoff = np.percentile(df['risk'], 75)
     high_risk = df['risk'] > cutoff
-   
+    
     naf.fit(T[high_risk], event_observed=E[high_risk], label='High_Risk')
     ax = naf.plot(ci_show=with_ci)
     naf.fit(T[~high_risk], event_observed=E[~high_risk], label='Low_Risk')
@@ -60,8 +60,7 @@ def plot_AUC(scores, patient_labels):
     plt.xlabel('False Positive Rate')
     plt.savefig('./roc_auc_curve.png')
 
-def evaluate_HR(scores, pids, patient_labels, hr_days=90):
-    outcome_mat = loadmat("./datasets/patient_outcomes.mat")['outcomes']
+def evaluate_HR(outcome_mat, scores, pids, patient_labels, hr_days=90, mode="continuous"):
     survival_dict = {x[0]: x[4] for x in outcome_mat}
     df_list = []
     for risk_score, pid, outcome in zip(scores, pids, patient_labels):
@@ -75,11 +74,9 @@ def evaluate_HR(scores, pids, patient_labels, hr_days=90):
     for hr_days in hr_days_opts:
 	    patient_df.loc[patient_df['days_survived'] > hr_days, 'death'] = 0
 	    patient_df.loc[patient_df['death'] == 0, 'days_survived'] = 100
-	    cph = CoxPHFitter()
+            cph = CoxPHFitter()
 	    m = cph.fit(patient_df, duration_col='days_survived', event_col='death')
    	    hr_vals.append(np.exp(m.hazards_['risk'][0])) 
-	    if hr_days ==  90 and hr_vals[-1] > 12:
-                pdb.set_trace()
     return hr_vals
 
 
