@@ -63,62 +63,56 @@ np.random.shuffle(new_order)
 X_val = X_test[new_order][:3000]
 y_val = y_test[new_order][:3000]
 
-test_patients = np.resize(X_test, (627, 1000, input_dim, 1))
 patient_outcomes = loadmat("./datasets/patient_outcomes.mat")['outcomes'] 
 survival_dict = {x[0]: x[4] for x in patient_outcomes}
+
+# Model specific variables
+if m_type == 'LR':
+    n_iter = 1
+    m = LogisticRegression()
+
+    X_train = np.squeeze(X_train, 2)
+    test_patients = np.resize(X_test, (627, 1000, input_dim))
+    train_f = lambda _ : m.fit(X_train, y_train)
+else:
+    n_iter = 40
+    m, embedding_m = build_fc_model((input_dim, 1))
+    m.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+    m.summary()
+
+    test_patients = np.resize(X_test, (627, 1000, input_dim, 1))
+    train_f = lambda _ : m.fit(x=X_train, y=y_train, validation_data=(X_val, y_val), epochs=10, verbose=False, batch_size=4000)
+
 
 print("loaded data")
 hrs = []
 discrete_hrs = []
 auc_vals = []
-if m_type == 'LR':
-    m = LogisticRegression()
-    m.fit(np.squeeze(X_train, 2), y_train)
-    scores = risk_scores(m, [np.squeeze(x, 2) for x in test_patients])
+
+for i in range(n_iter):
+    train_f()
+
+    # Evaluation 
+	scores = risk_scores(m, test_patients)
+
+    scores = scores[:600]
+    test_patient_labels = test_patient_labels[:600]
+    test_pids = test_pids[:600]
 
     discrete_scores = [1 if x > np.percentile(scores, 75) else 0 for x in scores]
-
     auc_val = evaluate_AUC(scores, test_patient_labels)
     hr = evaluate_HR(patient_outcomes, scores, test_pids , test_patient_labels, "continuous")
-    discrete_hr = evaluate_HR(patient_outcomes, discrete_scores, test_pids, test_patient_labels, "discrete")
+    discrete_hr = evaluate_HR(survival_dict, discrete_scores, test_pids, test_patient_labels, "discrete")
     
-    score_subset = scores[:600]
-    labels_subset = test_patient_labels[:600]
-    n_high_risk_death = np.sum(test_patient_labels[np.argsort(score_subset)][-157:])
+    
+    n_high_risk_death = np.sum(test_patient_labels[np.argsort(scores)][-150:])
 
     auc_vals.append(auc_val)
     hrs.append(hr)
     discrete_hrs.append(discrete_hr)
 
-    
-else:
-    m, embedding_m = build_fc_model((input_dim, 1))
-    m.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
-    m.summary()
-    pdb.set_trace()
-    for i in range(40):
-        m.fit(x=X_train, y=y_train, validation_data=(X_val, y_val), epochs=10, verbose=False, batch_size=4000)	
-    	scores = risk_scores(m, test_patients)
-
-        discrete_scores = [1 if x > np.percentile(scores, 75) else 0 for x in scores]
-
-        scores = scores[:600]
-        test_patient_labels = test_patient_labels[:600]
-        test_pids = test_pids[:600]
-
-        auc_val = evaluate_AUC(scores, test_patient_labels)
-        hr = evaluate_HR(patient_outcomes, scores, test_pids , test_patient_labels, "continuous")
-        discrete_hr = evaluate_HR(survival_dict, discrete_scores, test_pids, test_patient_labels, "discrete")
-        
-        
-        n_high_risk_death = np.sum(test_patient_labels[np.argsort(scores)][-150:])
-
-        auc_vals.append(auc_val)
-        hrs.append(hr)
-        discrete_hrs.append(discrete_hr)
-
-        print(n_high_risk_death) 
-        print(auc_val, hr, discrete_hr)
-        if n_high_risk_death > 9:
-            pdb.set_trace() 
+    print(n_high_risk_death) 
+    print(auc_val, hr, discrete_hr)
+    if n_high_risk_death > 9:
+        pdb.set_trace() 
 pdb.set_trace()
