@@ -73,7 +73,9 @@ if m_type == 'LR':
 
     X_train = np.squeeze(X_train, 2)
     test_patients = np.resize(X_test, (627, 1000, input_dim))
-    train_f = lambda _ : m.fit(X_train, y_train)
+    train_m = lambda _ : m.fit(X_train, y_train)
+    score_m = lambda test_patients: risk_scores(m, test_patients)
+
 else:
     n_iter = 40
     m, embedding_m = build_fc_model((input_dim, 1))
@@ -81,29 +83,29 @@ else:
     m.summary()
 
     test_patients = np.resize(X_test, (627, 1000, input_dim, 1))
-    train_f = lambda _ : m.fit(x=X_train, y=y_train, validation_data=(X_val, y_val), epochs=10, verbose=False, batch_size=4000)
+    train_m = lambda _ : m.fit(x=X_train, y=y_train, validation_data=(X_val, y_val), epochs=10, verbose=False, batch_size=4000)
+    score_m = lambda test_patients: risk_scores(m, test_patients)
 
 
-print("loaded data")
 hrs = []
 discrete_hrs = []
 auc_vals = []
-
 for i in range(n_iter):
-    train_f()
+    train_m()
 
-    # Evaluation 
-	scores = risk_scores(m, test_patients)
+    # Calculate risk scores for all test patients
+	scores = score_m(test_patients)
 
+    # Subsample test set to achieve desired incidence rate
     scores = scores[:600]
     test_patient_labels = test_patient_labels[:600]
     test_pids = test_pids[:600]
-
+    
     discrete_scores = [1 if x > np.percentile(scores, 75) else 0 for x in scores]
+
     auc_val = evaluate_AUC(scores, test_patient_labels)
     hr = evaluate_HR(patient_outcomes, scores, test_pids , test_patient_labels, "continuous")
     discrete_hr = evaluate_HR(survival_dict, discrete_scores, test_pids, test_patient_labels, "discrete")
-    
     
     n_high_risk_death = np.sum(test_patient_labels[np.argsort(scores)][-150:])
 
