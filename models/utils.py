@@ -195,10 +195,10 @@ def evaluate_test_embedding(train_embedding, tr_y, test_embedding, test_y):
           incorrect_distances.append(distance)
 
     #pdb.set_trace()
-    print "Mean correct distance: ", np.mean(correct_distances)
-    print "Mean incorrect distance: ", np.mean(incorrect_distances)
-    print "N Correct 1: ", n_correct_1
-    print "N Correct 0: ", n_correct - n_correct_1
+    print("Mean correct distance: ", np.mean(correct_distances))
+    print("Mean incorrect distance: ", np.mean(incorrect_distances))
+    print("N Correct 1: ", n_correct_1)
+    print("N Correct 0: ", n_correct - n_correct_1)
     return n_correct/len(test_y)
 
 def evaluate_train_embedding(train_embedding, tr_y):
@@ -221,9 +221,9 @@ def evaluate_KNN(train_embedding, tr_y, test_embedding, test_y, k=1):
       n_correct += 1
       correct.append(n_sample)
     else:
-      print n_sample
+      print(n_sample)
     n_sample += 1
-  print len(correct), n_correct, len(test_y)
+  print(len(correct), n_correct, len(test_y))
   return n_correct/len(test_y)
 
 def classify_sample(output, train_embedding, tr_y):
@@ -295,7 +295,7 @@ def eval_clustering(pred_labels, labels):
   tp, fp, tn, fn = get_tp_fp_tn_fn(co_matrix)
 
   nmi = normalized_mutual_info_score(pred_labels, labels)
-  print 'Rand Index: ', rand_ind
+  print('Rand Index: ', rand_ind)
   return rand_ind
 
 

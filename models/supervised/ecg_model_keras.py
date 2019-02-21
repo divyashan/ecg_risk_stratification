@@ -17,7 +17,7 @@ from ecg_AAAI.models.supervised.ecg_fi_model_keras import build_fi_model
 from ecg_AAAI.models.supervised.ecg_fc import build_fc_model
 from ecg_AAAI.models.gpu_utils import restrict_GPU_keras
 from ecg_AAAI.models.supervised.eval import evaluate_AUC, evaluate_HR, risk_scores
-restrict_GPU_keras("0")
+restrict_GPU_keras("2")
 
 mode = sys.argv[1]
 m_type = sys.argv[2]
@@ -30,17 +30,44 @@ hf.close()
 
 # Load X 
 if mode == "one_beat":     
-	x_file = h5py.File('datasets/one_beat.h5', 'r')
+    x_file = h5py.File('datasets/one_beat.h5', 'r')
+    all_test = h5py.File('datasets/all_test_one.h5', 'r')
+    n_beats = 1000
+    instance_length = 128
 elif mode == "three_beat":
-	x_file = h5py.File('datasets/three_beat.h5', 'r')
+    x_file = h5py.File('datasets/three_beat.h5', 'r')
+    all_test = h5py.File('datasets/all_test_three.h5', 'r')
+    n_beats = 998
+    instance_length = 384
 elif mode == 'four_beat':
-	x_file = h5py.File('datasets/four_beat.h5', 'r')
+    x_file = h5py.File('datasets/four_beat.h5', 'r')
+    all_test = h5py.File('datasets/all_test_four.h5', 'r')
+    n_beats = 997
+    instance_length = 512
 else: 
-	x_file = h5py.File('datasets/two_beat.h5', 'r')
+    x_file = h5py.File('datasets/two_beat.h5', 'r')
+    all_test = h5py.File('datasets/all_test_two.h5', 'r')
+    n_beats = 999 
+    instance_length = 256
 
+pdb.set_trace()
 X_train = np.array(x_file.get('X_train'))
 X_test = np.array(x_file.get('X_test')) 
 x_file.close()
+
+all_test_patients = np.array(all_test.get('test_patients'))
+all_test_patient_labels = np.array(all_test.get('test_patient_labels'))
+all_test_pids = np.loadtxt('all_test_pids')
+
+# Create balanced 80/20 split
+train_add = all_test_patients[:4000].reshape(4000*n_beats, 1, instance_length) 
+train_label_add = np.array([[g]*n_beats for g in all_test_patient_labels[:4000]])
+X_train = np.concatenate([X_train,train_add])
+y_train = np.concatenate([y_train, train_label_add.reshape(4000*n_beats)])
+
+all_test_patients = all_test_patients[4000:]
+all_test_patient_labels = all_test_patient_labels[4000:]
+all_test_pids = all_test_pids[4000:]
 
 # Load test patient metadata
 test_hf = h5py.File('datasets/test_pids.h5', 'r')
@@ -48,23 +75,6 @@ test_pids = np.array(test_hf.get('pids'))
 test_patient_labels = np.array(test_hf.get('patient_labels'))
 test_hf.close()
 
-# Pre-process data
-input_dim = X_train.shape[2]
-X_train = np.swapaxes(X_train, 1, 2)
-X_test = np.swapaxes(X_test, 1, 2)
-
-new_order = np.arange(len(X_train))
-np.random.shuffle(new_order)
-X_train = X_train[new_order]
-y_train = y_train[new_order]
-
-new_order = np.arange(len(X_test))
-np.random.shuffle(new_order)
-X_val = X_test[new_order][:3000]
-y_val = y_test[new_order][:3000]
-
-patient_outcomes = loadmat("./datasets/patient_outcomes.mat")['outcomes'] 
-survival_dict = {x[0]: x[4] for x in patient_outcomes}
 
 # Model specific variables
 if m_type == 'LR':
@@ -73,7 +83,7 @@ if m_type == 'LR':
 
     X_train = np.squeeze(X_train, 2)
     test_patients = np.resize(X_test, (627, 1000, input_dim))
-    train_m = lambda _ : m.fit(X_train, y_train)
+    train_m = lambda : m.fit(X_train, y_train)
     score_m = lambda test_patients: risk_scores(m, test_patients)
 
 else:
@@ -83,7 +93,9 @@ else:
     m.summary()
 
     test_patients = np.resize(X_test, (627, 1000, input_dim, 1))
-    train_m = lambda _ : m.fit(x=X_train, y=y_train, validation_data=(X_val, y_val), epochs=10, verbose=False, batch_size=4000)
+    class_weight = {0: 1.,
+                    1: 30.}
+    train_m = lambda : m.fit(x=X_train, y=y_train, validation_data=(X_val, y_val), epochs=10, verbose=True, batch_size=10000, class_weight=class_weight)
     score_m = lambda test_patients: risk_scores(m, test_patients)
 
 
@@ -94,18 +106,22 @@ for i in range(n_iter):
     train_m()
 
     # Calculate risk scores for all test patients
-	scores = score_m(test_patients)
-
+    scores = score_m(test_patients)
     # Subsample test set to achieve desired incidence rate
     scores = scores[:600]
     test_patient_labels = test_patient_labels[:600]
     test_pids = test_pids[:600]
     
-    discrete_scores = [1 if x > np.percentile(scores, 75) else 0 for x in scores]
-
-    auc_val = evaluate_AUC(scores, test_patient_labels)
-    hr = evaluate_HR(patient_outcomes, scores, test_pids , test_patient_labels, "continuous")
-    discrete_hr = evaluate_HR(survival_dict, discrete_scores, test_pids, test_patient_labels, "discrete")
+    discrete_scores = [1 if x >= np.percentile(scores, 75) else 0 for x in scores]
+    """ 
+    try: 
+        auc_val = evaluate_AUC(scores, test_patient_labels)
+        hr = evaluate_HR(survival_dict, scores, test_pids , test_patient_labels, "continuous")
+        discrete_hr = evaluate_HR(survival_dict, discrete_scores, test_pids, test_patient_labels, "discrete")
+    except:
+        hr = 0
+        auc = 0
+        discrete_hr = 0
     
     n_high_risk_death = np.sum(test_patient_labels[np.argsort(scores)][-150:])
 
@@ -115,6 +131,18 @@ for i in range(n_iter):
 
     print(n_high_risk_death) 
     print(auc_val, hr, discrete_hr)
-    if n_high_risk_death > 9:
+    """
+    n_high_risk_death = 10
+    discrete_hr = [10]
+    if n_high_risk_death > 9 or discrete_hr[0] > 9:
+        all_scores = score_m(all_test_patients)
+        cutoff = np.percentile(all_scores, 75)
+        all_discrete_scores = [1 if x >= cutoff else 0 for x in all_scores]
+        
+        all_auc = evaluate_AUC(all_scores, all_test_patient_labels)
+        all_hr = evaluate_HR(survival_dict, scores, all_test_pids, all_test_patient_labels, "continous")
+        all_discrete_hr = evaluate_HR(survival_dict, all_discrete_scores, all_test_pids, all_test_patient_labels, "discrete")
+        print("ALL patient scores: ")
+        print(all_auc,all_hr, all_discrete_hr)
         pdb.set_trace() 
 pdb.set_trace()

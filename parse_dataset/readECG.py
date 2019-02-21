@@ -23,7 +23,7 @@ def get_patient_data(patient_ids, mode="normal"):
     for pid in patient_ids:
         f_path = get_f_path(pid, mode)
         if not f_path:
-            print "Couldn't find: ", pid
+            print("Couldn't find: ", pid)
             continue
         pid_mat = pd.read_csv(f_path, delim_whitespace=True).values
         if len(pid_mat) < 1000:
@@ -95,3 +95,59 @@ def loadECG(train_normal, train_death, test_normal, test_death):
     three_beat.close()
 
     return X_train, y_train, X_test, y_test, test_x_list, test_y_list
+
+def generate_all_test_files(test_ids, id_death_map):
+    datapath = "./datasets/ecg_data/" 
+    pdb.set_trace()
+    test_patients = []
+    test_patient_ids = []
+    test_patient_labels = []
+    test_instance_labels = []
+    existing_pids = [int(x[:-4]) for x in sorted(os.listdir(datapath))[:-1]]
+    test_ids = sorted(test_ids)
+    test_ids = [x for x in test_ids if x in existing_pids]
+    for pid in test_ids:
+        entries = np.loadtxt(datapath + "/" + str(int(pid)) + ".txt")
+        if len(entries) == 0:
+            continue
+        pid_data = np.zeros((1000,128))
+        pid_data[:entries.shape[0],:] = entries 
+        test_patients.append(pid_data)
+        outcome = id_death_map[pid]
+        test_patient_ids.append(pid)
+        test_patient_labels.append(outcome)
+        test_instance_labels.append([outcome]*1000)
+        print(pid)
+    print("Building h5py files...")
+    test_patients = np.array(test_patients)
+    all_test_second_beat = np.concatenate([test_patients[:,1:,:],test_patients[:,0:1,:]], axis=1)
+    all_test_third_beat = np.concatenate([test_patients[:,2:,:], test_patients[:,0:2,:]], axis=1)
+    
+    all_test_one = test_patients
+    all_test_two = np.concatenate([all_test_one,all_test_second_beat],axis=2)[:,:999,:]
+    all_test_three = np.concatenate([all_test_one,all_test_second_beat,all_test_third_beat],axis=2)[:,:998,:]
+    
+    all_test_one = np.expand_dims(all_test_one, 3)
+    all_test_two = np.expand_dims(all_test_two, 3)
+    all_test_three = np.expand_dims(all_test_three, 3)
+
+    print("Creating all test files...")    
+    datasets = [('all_test_one', all_test_one), ('all_test_two', all_test_two), ('all_test_three', all_test_three)]
+    for name,d in datasets:
+        all_test_f  = h5py.File(name + ".h5", "w")
+        all_test_f.create_dataset("test_patients", data=d)
+        all_test_f.create_dataset("test_patient_labels", data=test_patient_labels)
+        all_test_f.close()
+
+    x_one = np.concatenate(all_test_one)
+    x_two = np.concatenate(all_test_two)
+    x_three = np.concatenate(all_test_three)
+    
+    print("Creating all instance files...")    
+    instance_datasets = [('all_instance_one', x_one),('all_instance_two', x_two), ('all_instance_three', x_three)]
+    for name,d in instance_datasets:
+        all_instance_f = h5py.File(name + ".h5", "w")
+        all_instance_f.create_dataset("X_test", data=x_one)
+        all_instance_f.create_dataset("y_test", data=test_instance_labels)
+        all_instance_f.close()
+

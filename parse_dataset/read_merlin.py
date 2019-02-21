@@ -65,29 +65,6 @@ def process_dataset():
     pid_no = 0
     skipped = []
 
-    """
-    for block_no in range(int(np.ceil(float(len(cv_death_ids))/BLOCK_SIZE))):
-        f_path = WRITE_PATH + "death_" + str(block_no) + ".csv"
-        outcome_f = open(f_path, "w")
-        block_ct = 0
-        while pid_no < len(cv_death_ids)-1 and block_ct < BLOCK_SIZE:
-            pid_no += 1
-
-            pid = cv_death_ids[pid_no]
-            psignal = get_patient_signal(pid)
-            if psignal == "DNE":
-                skipped.append(pid)
-                continue
-            outline = str(pid) + ",1," + psignal + "\n"
-            outcome_f.write(outline)
-
-
-            line_no += 1
-            block_ct += 1
-            print line_no
-        print "Closing file number: ", block_no
-        outcome_f.close()
-    """
     pid_no = 0
     for block_no in range(int(np.ceil(float(len(cv_survive_ids))/BLOCK_SIZE))):
         outcome_f = open(WRITE_PATH + "survive_" + str(block_no) + ".csv", "w")
@@ -146,11 +123,6 @@ def write_adjacent_beats():
     outcomes = np.loadtxt(META_PATH, delimiter=",")
     cv_death_ids = outcomes[np.where(outcomes[:, CV_DEATH_COL] == 1)[0], 0]
     cv_survive_ids = outcomes[np.where(outcomes[:, CV_DEATH_COL] == 0)[0], 0]
-
-
-    # these are the ones to
-    cv_death_ids = [5633, 2274, 3270, 5249, 872, 1357, 4973, 1136, 1298, 2357, 1302, 3511, 6005]
-
 
     print "Starting on death patient signals..."
     for pid in cv_death_ids:

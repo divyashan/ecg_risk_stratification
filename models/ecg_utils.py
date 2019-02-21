@@ -58,8 +58,8 @@ def percentage_death(tr_embedding, tr_y, embedded_signal, threshold=None):
 	if threshold:
 		guesses = [tr_y[training_mins[i]] for i in range(n_samples) if training_dists[i] < threshold]
 		if len(guesses) == 0:
-			print "Embedded signal shape: ", embedded_signal.shape
-			print training_dists
+			print("Embedded signal shape: ", embedded_signal.shape)
+			print(training_dists)
 			return 0
 	else:
 		guesses = tr_y[training_mins]
