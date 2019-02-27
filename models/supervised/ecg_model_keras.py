@@ -17,46 +17,69 @@ from ecg_AAAI.models.supervised.ecg_fi_model_keras import build_fi_model
 from ecg_AAAI.models.supervised.ecg_fc import build_fc_model
 from ecg_AAAI.models.gpu_utils import restrict_GPU_keras
 from ecg_AAAI.models.supervised.eval import evaluate_AUC, evaluate_HR, risk_scores
-restrict_GPU_keras("2")
+import tftables
+restrict_GPU_keras("1")
 
 mode = sys.argv[1]
 m_type = sys.argv[2]
 
+y_mode = "cvd"
+splits = ["0", "1", "2", "3", "4"]
+split_num = "0"
+split_dir = "./datasets/splits/split_" + split_num
 # Load Y
-hf = h5py.File('datasets/data.h5', 'r')
-y_train = np.array(hf.get('y_train'))
-y_test = np.array(hf.get('y_test')) 
-hf.close()
+# hf = h5py.File('datasets/data.h5', 'r')
+# y_train = np.array(hf.get('y_train'))
+# y_test = np.array(hf.get('y_test')) 
+# hf.close()
+
+# Load Y
+y_train = np.loadtxt(split_dir + "/" + y_mode + "_train_labels")
+y_test = np.loadtxt(split_dir + "/" + y_mode + "_test_labels")
+
 
 # Load X 
-if mode == "one_beat":     
-    x_file = h5py.File('datasets/one_beat.h5', 'r')
-    all_test = h5py.File('datasets/all_test_one.h5', 'r')
-    n_beats = 1000
-    instance_length = 128
-elif mode == "three_beat":
-    x_file = h5py.File('datasets/three_beat.h5', 'r')
-    all_test = h5py.File('datasets/all_test_three.h5', 'r')
-    n_beats = 998
-    instance_length = 384
-elif mode == 'four_beat':
-    x_file = h5py.File('datasets/four_beat.h5', 'r')
-    all_test = h5py.File('datasets/all_test_four.h5', 'r')
-    n_beats = 997
-    instance_length = 512
-else: 
-    x_file = h5py.File('datasets/two_beat.h5', 'r')
-    all_test = h5py.File('datasets/all_test_two.h5', 'r')
-    n_beats = 999 
-    instance_length = 256
+# if mode == "one_beat":     
+#     x_file = h5py.File('datasets/one_beat.h5', 'r')
+#     all_test = h5py.File('datasets/all_test_one.h5', 'r')
+#     n_beats = 1000
+#     instance_length = 128
+# elif mode == "three_beat":
+#     x_file = h5py.File('datasets/three_beat.h5', 'r')
+#     all_test = h5py.File('datasets/all_test_three.h5', 'r')
+#     n_beats = 998
+#     instance_length = 384
+# elif mode == 'four_beat':
+#     x_file = h5py.File('datasets/four_beat.h5', 'r')
+#     all_test = h5py.File('datasets/all_test_four.h5', 'r')
+#     n_beats = 997
+#     instance_length = 512
+# else: 
+#     x_file = h5py.File('datasets/two_beat.h5', 'r')
+#     all_test = h5py.File('datasets/all_test_two.h5', 'r')
+#     n_beats = 999 
+#     instance_length = 256
+
+
+# Load X
+
+reader = tftables.open_file(filename=split_dir + "/train.h5", batch_size=10)
+
+x_train_file = h5py.File(split_dir + "/train.h5")
+x_test_file = h5py.File(split_dir + "/test.h5")
+X_train = np.array(x_train_file.get('adjacent_beats'))
+X_test = np.array(x_test_fileß.get('adjacent_beats'))
+x_train_file.close()
+x_test_file.close()
+
+pdb.set_trace()
 
 
 # Load X_train, y_train, X_test and y_test
-
-pdb.set_trace()
-X_train = np.array(x_file.get('X_train'))
-X_test = np.array(x_file.get('X_test')) 
-x_file.close()
+# pdb.set_trace()
+# X_train = np.array(x_file.get('X_train'))
+# X_test = np.array(x_file.get('X_test')) 
+# x_file.close()
 
 all_test_patients = np.array(all_test.get('test_patients'))
 all_test_patient_labels = np.array(all_test.get('test_patient_labels'))

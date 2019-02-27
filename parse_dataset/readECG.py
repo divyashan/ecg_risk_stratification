@@ -96,11 +96,6 @@ def loadECG(train_normal, train_death, test_normal, test_death):
 
     return X_train, y_train, X_test, y_test, test_x_list, test_y_list
 
-def generate_all_test_files(train_ids, test_ids):
-    for pid in train_ids:
-        
-
-
 def generate_all_test_files(test_ids, id_death_map):
     datapath = "./datasets/ecg_data/" 
     pdb.set_trace()
