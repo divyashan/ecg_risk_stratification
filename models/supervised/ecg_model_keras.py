@@ -50,6 +50,9 @@ else:
     n_beats = 999 
     instance_length = 256
 
+
+# Load X_train, y_train, X_test and y_test
+
 pdb.set_trace()
 X_train = np.array(x_file.get('X_train'))
 X_test = np.array(x_file.get('X_test')) 
@@ -59,21 +62,21 @@ all_test_patients = np.array(all_test.get('test_patients'))
 all_test_patient_labels = np.array(all_test.get('test_patient_labels'))
 all_test_pids = np.loadtxt('all_test_pids')
 
-# Create balanced 80/20 split
-train_add = all_test_patients[:4000].reshape(4000*n_beats, 1, instance_length) 
-train_label_add = np.array([[g]*n_beats for g in all_test_patient_labels[:4000]])
-X_train = np.concatenate([X_train,train_add])
-y_train = np.concatenate([y_train, train_label_add.reshape(4000*n_beats)])
+# # Create balanced 80/20 split
+# train_add = all_test_patients[:4000].reshape(4000*n_beats, 1, instance_length) 
+# train_label_add = np.array([[g]*n_beats for g in all_test_patient_labels[:4000]])
+# X_train = np.concatenate([X_train,train_add])
+# y_train = np.concatenate([y_train, train_label_add.reshape(4000*n_beats)])
 
-all_test_patients = all_test_patients[4000:]
-all_test_patient_labels = all_test_patient_labels[4000:]
-all_test_pids = all_test_pids[4000:]
+# all_test_patients = all_test_patients[4000:]
+# all_test_patient_labels = all_test_patient_labels[4000:]
+# all_test_pids = all_test_pids[4000:]
 
-# Load test patient metadata
-test_hf = h5py.File('datasets/test_pids.h5', 'r')
-test_pids = np.array(test_hf.get('pids'))
-test_patient_labels = np.array(test_hf.get('patient_labels'))
-test_hf.close()
+# # Load test patient metadata
+# test_hf = h5py.File('datasets/test_pids.h5', 'r')
+# test_pids = np.array(test_hf.get('pids'))
+# test_patient_labels = np.array(test_hf.get('patient_labels'))
+# test_hf.close()
 
 
 # Model specific variables
