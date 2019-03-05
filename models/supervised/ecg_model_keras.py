@@ -25,7 +25,7 @@ m_type = sys.argv[2]
 
 y_mode = "cvd"
 splits = ["0", "1", "2", "3", "4"]
-split_num = "0"
+split_num = "2"
 split_dir = "./datasets/splits/split_" + split_num
 # Load Y
 # hf = h5py.File('datasets/data.h5', 'r')
@@ -63,14 +63,26 @@ y_test = np.loadtxt(split_dir + "/" + y_mode + "_test_labels")
 
 # Load X
 
-reader = tftables.open_file(filename=split_dir + "/train.h5", batch_size=10)
+def input_transform(tbl_batch):
+        labels = tbl_batch['labels']
+        data = tbl_batch['adjacent_beats']
 
-x_train_file = h5py.File(split_dir + "/train.h5")
-x_test_file = h5py.File(split_dir + "/test.h5")
-X_train = np.array(x_train_file.get('adjacent_beats'))
-X_test = np.array(x_test_fileß.get('adjacent_beats'))
-x_train_file.close()
-x_test_file.close()
+        truth = tf.to_float(labels)
+        data_float = tf.to_float(data)
+
+        return truth, data_float
+
+train_loader = tftables.load_dataset(filename=split_dir + "/train.h5",
+                                   dataset_path='',
+                                   input_transform=input_transform,
+                                   batch_size=20)
+
+# x_train_file = h5py.File(split_dir + "/train.h5")
+# x_test_file = h5py.File(split_dir + "/test.h5")
+# X_train = np.array(x_train_file.get('adjacent_beats'))
+# X_test = np.array(x_test_fileß.get('adjacent_beats'))
+# x_train_file.close()
+# x_test_file.close()
 
 pdb.set_trace()
 
@@ -81,9 +93,9 @@ pdb.set_trace()
 # X_test = np.array(x_file.get('X_test')) 
 # x_file.close()
 
-all_test_patients = np.array(all_test.get('test_patients'))
-all_test_patient_labels = np.array(all_test.get('test_patient_labels'))
-all_test_pids = np.loadtxt('all_test_pids')
+# all_test_patients = np.array(all_test.get('test_patients'))
+# all_test_patient_labels = np.array(all_test.get('test_patient_labels'))
+# all_test_pids = np.loadtxt('all_test_pids')
 
 # # Create balanced 80/20 split
 # train_add = all_test_patients[:4000].reshape(4000*n_beats, 1, instance_length) 
