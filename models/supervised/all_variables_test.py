@@ -38,6 +38,7 @@ n_results = 3
 
 train_file = None
 test_file = None
+plotting = False
 
 # # Set up directory structure in case it's not there
 # for y_mode in y_modes:
@@ -83,7 +84,7 @@ for y_mode in y_modes:
             n_blocks = int(len(train_y)/block_size + 1)
 
             for i in range(n_results):
-		n_blocks = 0
+		        n_blocks = 0
                 for j in range(n_blocks):
                     x_train_block, y_train_block = get_block(train_file, i, block_size, y_mode, day_thresh)
                     print("Finished loading Block #", j)
@@ -96,35 +97,39 @@ for y_mode in y_modes:
                         m.fit(x=x_train_batch, y=y_train_batch, epochs=n_epochs, verbose=True, batch_size=80000, class_weight=class_weight)
                 
                 # TODO: test all functions w/o regenerating instance predictions
-                py_pred = get_preds(m, test_file, pred_f)
-                if len(all_y) != len(py_pred):
-                    fixed_length = min(len(all_y), len(py_pred))
-                    all_y = all_y[:fixed_length]
-                    py_pred = py_pred[:fixed_length]
+                for pred_f, pred_f_name in zip(pred_fs, pred_f_names):
+                    print("Testing prediction functions .. will this work?!")
+                    py_pred = get_preds(m, test_file, pred_f)
+                    print('good to go')
+                    if len(all_y) != len(py_pred):
+                        fixed_length = min(len(all_y), len(py_pred))
+                        all_y = all_y[:fixed_length]
+                        py_pred = py_pred[:fixed_length]
 
-                auc_score = roc_auc_score(test_y, py_pred)
-                fig_path = get_fig_path(y_mode, day_thresh, split_num, model_name)
+                    auc_score = roc_auc_score(test_y, py_pred)
+                    fig_path = get_fig_path(y_mode, day_thresh, split_num, model_name)
 
-                m.save("m_" + y_mode + "_epoch_" + str(int(i)) + "_" + str(int(day_thresh)) + "_" + str(int(split_num)) + "_" +  model_name + ".h5" )
-                embedding_m.save("m_" + y_mode + "_epoch_" + str(int(i)) + "_" + str(int(day_thresh)) + "_" + str(int(split_num)) + "_" +  model_name + ".h5")
+                    m.save("m_" + y_mode + "_epoch_" + str(int(i)) + "_" + str(int(day_thresh)) + "_" + str(int(split_num)) + "_" +  model_name + ".h5" )
+                    embedding_m.save("m_" + y_mode + "_epoch_" + str(int(i)) + "_" + str(int(day_thresh)) + "_" + str(int(split_num)) + "_" +  model_name + ".h5")
 
-                plt.xlim(0, 1)
-                plt.hist(py_pred[np.where(all_y == 1)], color='red', alpha=.5, bins=20)
-                plt.title("[" + y_mode +  " positive] distribution of risk scores (90 days) AUC = " + str(auc_score))
-                plt.savefig(fig_path +"/epoch_" + str(i) + "_positive")
-                plt.clf()
+                    if plotting:
+                        plt.xlim(0, 1)
+                        plt.hist(py_pred[np.where(all_y == 1)], color='red', alpha=.5, bins=20)
+                        plt.title("[" + y_mode +  " positive] distribution of risk scores (90 days) AUC = " + str(auc_score))
+                        plt.savefig(fig_path +"/epoch_" + str(i) + "_positive")
+                        plt.clf()
 
-                plt.xlim(0, 1)
-                plt.hist(py_pred[np.where(all_y != 1)], color='green', alpha=.5, bins=20)
-                plt.title("[" + y_mode +  " negative] distribution" + "of risk scores (90 days) AUC = " + str(auc_score))
-                plt.savefig(fig_path +"/epoch_" + str(i) + "_negative")
-                plt.clf()
-                
-                result_dict = {'y_mode': y_mode, 'epoch': i, 'model': model_name, 
-                               'pauc': auc_score,'day_thresh': day_thresh, 'pred_f': pred_f_name,
-                               'split_num': split_num}
-                result_dicts.append(result_dict)
-                pd.DataFrame(result_dicts).to_csv("results_df")
+                        plt.xlim(0, 1)
+                        plt.hist(py_pred[np.where(all_y != 1)], color='green', alpha=.5, bins=20)
+                        plt.title("[" + y_mode +  " negative] distribution" + "of risk scores (90 days) AUC = " + str(auc_score))
+                        plt.savefig(fig_path +"/epoch_" + str(i) + "_negative")
+                        plt.clf()
+                    
+                    result_dict = {'y_mode': y_mode, 'epoch': i, 'model': model_name, 
+                                   'pauc': auc_score,'day_thresh': day_thresh, 'pred_f': pred_f_name,
+                                   'split_num': split_num}
+                    result_dicts.append(result_dict)
+                    pd.DataFrame(result_dicts).to_csv("results_df")
 
 
 
