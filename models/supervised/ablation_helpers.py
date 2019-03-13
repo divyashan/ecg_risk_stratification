@@ -59,6 +59,20 @@ def thresh_labels(y, day_thresh):
     thresh_y = np.array([1 if (y_val < day_thresh and y_val > 0) else 0 for y_val in y])
     return thresh_y
 
+def calc_hr(true_y, pred_y, pctl=75):
+    thresh = np.percentile(py_pred, pctl)
+    dicts = []
+    for d, pred in zip(true_y, pred_y):
+        o = 1 if d > 0 else 0
+        r = 1 if pred > thresh else 0
+        dicts.append({'duration': d, 'observed': o, 'risk': r})
+    data = pd.DataFrame(dicts)
+    
+    cph = CoxPHFitter()
+    cph.fit(data, duration_col='duration', event_col='observed', show_progress=True)
+    return np.exp(cph.hazards_['risk'][0])
+
+
 def get_preds(m, test_file, pred_f=np.mean):
     py_pred = []
     batch_size = 500

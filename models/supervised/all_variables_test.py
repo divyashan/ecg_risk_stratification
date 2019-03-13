@@ -18,7 +18,7 @@ from ecg_AAAI.models.supervised.ecg_fi_model_keras import build_fi_model
 from ecg_AAAI.models.supervised.ecg_fc import build_fc_model
 from ecg_AAAI.models.gpu_utils import restrict_GPU_keras
 from ecg_AAAI.models.supervised.ablation_helpers import *
-restrict_GPU_keras("3")
+restrict_GPU_keras("0")
 
 y_modes = ["mi", "cvd"]
 splits = ["0", "1", "2", "3", "4"]
@@ -51,7 +51,8 @@ plotting = False
 #                     os.mkdir(get_split_path(y_mode, day_thresh, split_num))
 #                 os.mkdir(get_fig_path(y_mode, day_thresh, split_num, model_name))
 
-
+splits = ["0"]
+day_threshs = [90]
 result_dicts = []
 for y_mode in y_modes:
     for day_thresh in day_threshs:
@@ -84,35 +85,38 @@ for y_mode in y_modes:
             n_blocks = int(len(train_y)/block_size + 1)
 
             for i in range(n_results):
-		        n_blocks = 0
                 for j in range(n_blocks):
                     x_train_block, y_train_block = get_block(train_file, i, block_size, y_mode, day_thresh)
                     print("Finished loading Block #", j)
                     for k in range(n_batches):
                         x_train_neg, y_train_neg = get_block_batch(x_train_block, y_train_block, batch_size, k) 
-                        print("Done getting batch")
+                        print("Done getting batch #", k)
 
                         x_train_batch = np.concatenate([x_train_neg, x_train_pos])
                         y_train_batch = np.concatenate([y_train_neg, y_train_pos])
-                        m.fit(x=x_train_batch, y=y_train_batch, epochs=n_epochs, verbose=True, batch_size=80000, class_weight=class_weight)
+                        m.fit(x=x_train_batch, y=y_train_batch, epochs=n_epochs, verbose=False, batch_size=80000)
                 
                 # TODO: test all functions w/o regenerating instance predictions
                 for pred_f, pred_f_name in zip(pred_fs, pred_f_names):
-                    print("Testing prediction functions .. will this work?!")
                     py_pred = get_preds(m, test_file, pred_f)
-                    print('good to go')
-                    if len(all_y) != len(py_pred):
-                        fixed_length = min(len(all_y), len(py_pred))
-                        all_y = all_y[:fixed_length]
+                    if len(test_y) != len(py_pred):
+                        fixed_length = min(len(test_y), len(py_pred))
+                        test_y = test_y[:fixed_length]
                         py_pred = py_pred[:fixed_length]
 
                     auc_score = roc_auc_score(test_y, py_pred)
-                    fig_path = get_fig_path(y_mode, day_thresh, split_num, model_name)
-
+                    hr_score = calc_hr(test_y, py_pred)
                     m.save("m_" + y_mode + "_epoch_" + str(int(i)) + "_" + str(int(day_thresh)) + "_" + str(int(split_num)) + "_" +  model_name + ".h5" )
                     embedding_m.save("m_" + y_mode + "_epoch_" + str(int(i)) + "_" + str(int(day_thresh)) + "_" + str(int(split_num)) + "_" +  model_name + ".h5")
 
+                    result_dict = {'y_mode': y_mode, 'epoch': i, 'model': model_name, 
+                                   'pauc': auc_score,'day_thresh': day_thresh, 'pred_f': pred_f_name,
+                                   'split_num': split_num}
+                    result_dicts.append(result_dict)
+                    pd.DataFrame(result_dicts).to_csv("restructured_training_df_4")
+                    
                     if plotting:
+                        fig_path = get_fig_path(y_mode, day_thresh, split_num, model_name)
                         plt.xlim(0, 1)
                         plt.hist(py_pred[np.where(all_y == 1)], color='red', alpha=.5, bins=20)
                         plt.title("[" + y_mode +  " positive] distribution of risk scores (90 days) AUC = " + str(auc_score))
@@ -125,12 +129,6 @@ for y_mode in y_modes:
                         plt.savefig(fig_path +"/epoch_" + str(i) + "_negative")
                         plt.clf()
                     
-                    result_dict = {'y_mode': y_mode, 'epoch': i, 'model': model_name, 
-                                   'pauc': auc_score,'day_thresh': day_thresh, 'pred_f': pred_f_name,
-                                   'split_num': split_num}
-                    result_dicts.append(result_dict)
-                    pd.DataFrame(result_dicts).to_csv("results_df")
-
 
 
 
