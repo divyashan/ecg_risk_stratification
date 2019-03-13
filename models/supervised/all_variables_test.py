@@ -83,6 +83,7 @@ for y_mode in y_modes:
             n_blocks = int(len(train_y)/block_size + 1)
 
             for i in range(n_results):
+		n_blocks = 0
                 for j in range(n_blocks):
                     x_train_block, y_train_block = get_block(train_file, i, block_size, y_mode, day_thresh)
                     print("Finished loading Block #", j)
