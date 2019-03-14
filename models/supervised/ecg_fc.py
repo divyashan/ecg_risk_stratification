@@ -13,11 +13,10 @@ import numpy as np
 import pdb
 import os
 
-num_fc_0 = 2
-
-def build_fc_model( img_shape):
+def build_fc_model( img_shape, num_fc_0=2, dtw_init=False):
 	initializer = glorot_normal()
-	x0 = Input( img_shape, name='Input')
+	input_dim = 256
+        x0 = Input( img_shape, name='Input')
 
 	raw_x = x0
 	flattened_raw_x = Flatten()(raw_x)
@@ -29,5 +28,10 @@ def build_fc_model( img_shape):
 	y = Dense(1, name='softmax', activation='sigmoid')(fc1)
 	embedding_model = Model(inputs = x0, outputs = fc1)
 	#embedding_model = Model(inputs = x0, outputs=fc0)
-	model = Model( inputs = x0, outputs = y )
-	return model, embedding_model
+        model = Model( inputs = x0, outputs = y )
+	half_dims = (int(input_dim/2), num_fc_0)
+        if dtw_init:
+            init_weights = np.concatenate([np.ones(half_dims), -1*np.ones(half_dims)])
+            rand_bias = model.layers[2].get_weights()[1]
+            model.layers[2].set_weights([init_weights, rand_bias])	
+        return model, embedding_model

@@ -19,6 +19,8 @@ from ecg_AAAI.models.supervised.ecg_fc import build_fc_model
 from ecg_AAAI.models.gpu_utils import restrict_GPU_keras
 from ecg_AAAI.models.supervised.ablation_helpers import *
 restrict_GPU_keras("0")
+import warnings
+warnings.filterwarnings("error")
 
 y_modes = ["mi", "cvd"]
 splits = ["0", "1", "2", "3", "4"]
@@ -27,14 +29,15 @@ pred_fs = [np.mean, np.median, top_10, top_20]
 pred_f_names = ['mean', 'median', 'top_10', 'top_20']
 fig_dir = "/home/divyas/ecg_AAAI/models/supervised/figs"
 
-n_fc_units = 1
+n_fc_units = 2
 model_name = "fc" + str(int(n_fc_units))
-batch_size = 80
+batch_size = 90
 day_thresh = 90
 input_dim = 256
-n_epochs = 5
+n_epochs = 1
 block_size = 1500
-n_results = 3
+n_results = 20
+dtw_prior_flag = True
 
 train_file = None
 test_file = None
@@ -53,6 +56,9 @@ plotting = False
 
 splits = ["0"]
 day_threshs = [90]
+pred_fs = [top_20]
+pred_f_names = ['top_20']
+y_modes = ['cvd']
 result_dicts = []
 for y_mode in y_modes:
     for day_thresh in day_threshs:
@@ -62,7 +68,7 @@ for y_mode in y_modes:
             if train_file:
                 train_file.close()
                 test_file.close()
-            m, embedding_m = build_fc_model((input_dim, 1))
+            m, embedding_m = build_fc_model((input_dim, 1), num_fc_0=n_fc_units, dtw_init=dtw_prior_flag)
             m.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
             split_dir = "/home/divyas/ecg_AAAI/datasets/splits/split_" + split_num
@@ -83,10 +89,14 @@ for y_mode in y_modes:
             batch_size = n_train_pos
             n_batches = int(block_size/batch_size + 1)
             n_blocks = int(len(train_y)/block_size + 1)
+            print("N blocks: ", n_blocks)
+            print("N batches: ", n_batches)
+            print("Batch size: ", batch_size)
+
 
             for i in range(n_results):
                 for j in range(n_blocks):
-                    x_train_block, y_train_block = get_block(train_file, i, block_size, y_mode, day_thresh)
+                    x_train_block, y_train_block = get_block(train_file, j, block_size, y_mode, day_thresh)
                     print("Finished loading Block #", j)
                     for k in range(n_batches):
                         x_train_neg, y_train_neg = get_block_batch(x_train_block, y_train_block, batch_size, k) 
@@ -94,10 +104,11 @@ for y_mode in y_modes:
 
                         x_train_batch = np.concatenate([x_train_neg, x_train_pos])
                         y_train_batch = np.concatenate([y_train_neg, y_train_pos])
-                        m.fit(x=x_train_batch, y=y_train_batch, epochs=n_epochs, verbose=False, batch_size=80000)
+                        m.fit(x=x_train_batch, y=y_train_batch, epochs=n_epochs, verbose=False, batch_size=160000)
                 
                 # TODO: test all functions w/o regenerating instance predictions
                 for pred_f, pred_f_name in zip(pred_fs, pred_f_names):
+                    print("Starting pred_f: ", pred_f_name)
                     py_pred = get_preds(m, test_file, pred_f)
                     if len(test_y) != len(py_pred):
                         fixed_length = min(len(test_y), len(py_pred))
@@ -105,15 +116,20 @@ for y_mode in y_modes:
                         py_pred = py_pred[:fixed_length]
 
                     auc_score = roc_auc_score(test_y, py_pred)
-                    hr_score = calc_hr(test_y, py_pred)
-                    m.save("m_" + y_mode + "_epoch_" + str(int(i)) + "_" + str(int(day_thresh)) + "_" + str(int(split_num)) + "_" +  model_name + ".h5" )
-                    embedding_m.save("m_" + y_mode + "_epoch_" + str(int(i)) + "_" + str(int(day_thresh)) + "_" + str(int(split_num)) + "_" +  model_name + ".h5")
+                    true_y = test_file[y_mode + "_labels"][:]
+                    hr_score = 0
+                    try:
+                        hr_score = calc_hr(true_y, py_pred)
+                    except:
+                        print("Error calculating HR")
+                    m.save("./dtw_prior/m_" + y_mode + "_epoch_" + str(int(i)) + "_" + str(int(day_thresh)) + "_" + str(int(split_num)) + "_" +  model_name + ".h5" )
+                    embedding_m.save("./weight_evolution/embedding_m_" + y_mode + "_epoch_" + str(int(i)) + "_" + str(int(day_thresh)) + "_" + str(int(split_num)) + "_" +  model_name + ".h5")
 
                     result_dict = {'y_mode': y_mode, 'epoch': i, 'model': model_name, 
-                                   'pauc': auc_score,'day_thresh': day_thresh, 'pred_f': pred_f_name,
+                                   'pauc': auc_score, 'hr': hr_score, 'day_thresh': day_thresh, 'pred_f': pred_f_name,
                                    'split_num': split_num}
                     result_dicts.append(result_dict)
-                    pd.DataFrame(result_dicts).to_csv("restructured_training_df_4")
+                    pd.DataFrame(result_dicts).to_csv("restructured_training_df_7")
                     
                     if plotting:
                         fig_path = get_fig_path(y_mode, day_thresh, split_num, model_name)
