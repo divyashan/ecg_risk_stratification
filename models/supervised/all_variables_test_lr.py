@@ -28,7 +28,7 @@ pred_fs = [np.mean, np.median, top_10_mean, top_20_mean]
 pred_f_names = ['mean', 'median', 'top_10_mean', 'top_20_mean']
 instances = ['one', 'two', 'three', 'four']
 fig_dir = "/home/divyas/ecg_AAAI/models/supervised/figs"
-split_prefix = "/home/divyas/ecg_AAAI/datasets/splits/split_"
+split_prefix = "/home/divyas/ecg_AAAI/datasets/split_"
 
 model_name = "lr" 
 batch_size = 200
