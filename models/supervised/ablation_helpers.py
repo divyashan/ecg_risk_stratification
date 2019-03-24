@@ -91,11 +91,12 @@ def calc_hr(true_y, pred_y, pctl=75):
         r = pred
         dicts.append({'duration': d, 'observed': o, 'risk': r})
     data = pd.DataFrame(dicts)
-    
     cph = CoxPHFitter()
     cph.fit(data, duration_col='duration', event_col='observed', show_progress=True)
-    return np.exp(cph.hazards_['risk'][0])
-
+    try:
+        return np.exp(cph.hazards_['risk'][0])
+    except:
+        return np.exp(cph.hazards_['risk'])
 
 def get_preds(m, test_file, pred_f=np.mean, n_beats=3600):
     py_pred = []
