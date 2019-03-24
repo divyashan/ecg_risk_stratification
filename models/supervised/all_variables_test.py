@@ -92,10 +92,10 @@ for split_num in splits:
                             print("Finished loading Block #", j)
                             for k in range(n_batches):
                                 x_train_neg, y_train_neg = get_block_batch(x_train_block, y_train_block, batch_size, k, n_beats=n_beats) 
-                                print("Done getting batch #", k)
+                                #print("Done getting batch #", k)
                                 x_train_batch = np.concatenate([x_train_neg, x_train_pos])
                                 y_train_batch = np.concatenate([y_train_neg, y_train_pos])
-                                m.fit(x=x_train_batch, y=y_train_batch, epochs=n_epochs, verbose=False, batch_size=50000)
+                                m.fit(x=x_train_batch, y=y_train_batch, epochs=n_epochs, verbose=False, batch_size=10000)
                         
                         # TODO: test all functions w/o regenerating instance predictions
                         for pred_f, pred_f_name in zip(pred_fs, pred_f_names):
@@ -113,14 +113,12 @@ for split_num in splits:
                                 hr_score = calc_hr(true_y, py_pred)
                             except:
                                 print("Error calculating HR")
-                        m.save("./dtw_prior/m_" + y_mode + "_epoch_" + str(int(i)) + "_" + str(int(day_thresh)) + "_" + str(int(split_num)) + "_" +  model_name + ".h5" )
-                        embedding_m.save("./weight_evolution/embedding_m_" + y_mode + "_epoch_" + str(int(i)) + "_" + str(int(day_thresh)) + "_" + str(int(split_num)) + "_" +  model_name + ".h5")
 
-                        result_dict = {'y_mode': y_mode, 'epoch': i, 'model': model_name, 
-                                       'pauc': auc_score, 'hr': hr_score, 'day_thresh': day_thresh, 'pred_f': pred_f_name,
-                                       'split_num': split_num}
-                        result_dicts.append(result_dict)
-                        pd.DataFrame(result_dicts).to_csv("mlp_all_parameters_df")
+                            result_dict = {'y_mode': y_mode, 'epoch': i, 'model': model_name, 'instance': instance_opt, 
+                                           'pauc': auc_score, 'hr': hr_score, 'day_thresh': day_thresh, 'pred_f': pred_f_name,
+                                           'split_num': split_num}
+                            result_dicts.append(result_dict)
+                            pd.DataFrame(result_dicts).to_csv("mlp_all_parameters_df")
                         
                         if plotting:
                             fig_path = get_fig_path(y_mode, day_thresh, split_num, model_name)
