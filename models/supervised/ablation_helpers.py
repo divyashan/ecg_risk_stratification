@@ -107,7 +107,7 @@ def get_preds(m, test_file, pred_f=np.mean, n_beats=3600):
     for i in range(n_batches):
         start = i*batch_size
         end = start + batch_size
-        x_test_batch = reshape_X(test_beats[start:end])
+        x_test_batch = reshape_X(test_beats[start:end,:n_beats,:])
         y_preds = m.predict(x_test_batch)
         y_preds = y_preds.reshape((int(len(y_preds)/n_beats), n_beats))
         #iy_pred.extend(extension)

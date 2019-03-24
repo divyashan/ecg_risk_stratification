@@ -44,17 +44,6 @@ train_file = None
 test_file = None
 plotting = False
 
-# # Set up directory structure in case it's not there
-# for y_mode in y_modes:
-#     for split_num in splits:
-#         for day_thresh in day_threshs:
-#             if not os.path.isdir(get_fig_path(y_mode, day_thresh, split_num, model_name)):
-#                 if not os.path.isdir(get_day_path(y_mode, day_thresh)):
-#                     os.mkdir(get_day_path(y_mode, day_thresh))
-#                 if not os.path.isdir(get_split_path(y_mode, day_thresh, split_num)):
-#                     os.mkdir(get_split_path(y_mode, day_thresh, split_num))
-#                 os.mkdir(get_fig_path(y_mode, day_thresh, split_num, model_name))
-
 y_modes = ['cvd']
 result_dicts = []
 for split_num in splits:
@@ -77,11 +66,11 @@ for split_num in splits:
                     train_y = get_labels(train_file, y_mode, day_thresh)
                     test_y = get_labels(test_file, y_mode, day_thresh)
                     train_pos_idxs = np.where(train_y == 1)[0]
-                    x_train_pos = train_file['adjacent_beats'][list(train_pos_idxs)]
+                    x_train_pos = train_file['adjacent_beats'][list(train_pos_idxs),:n_beats,:]
                     x_train_pos = reshape_X(x_train_pos)
                     y_train_pos = train_file[y_mode + '_labels'][list(train_pos_idxs)]
                     y_train_pos = thresh_labels(y_train_pos, day_thresh)
-                    y_train_pos = np.array([[y_val]*3600 for y_val in y_train_pos]).flatten()
+                    y_train_pos = np.array([[y_val]*n_beats for y_val in y_train_pos]).flatten()
 
                     n_train_pos = len(train_pos_idxs)
                     batch_size = n_train_pos
@@ -104,10 +93,9 @@ for split_num in splits:
                             for k in range(n_batches):
                                 x_train_neg, y_train_neg = get_block_batch(x_train_block, y_train_block, batch_size, k, n_beats=n_beats) 
                                 print("Done getting batch #", k)
-
                                 x_train_batch = np.concatenate([x_train_neg, x_train_pos])
                                 y_train_batch = np.concatenate([y_train_neg, y_train_pos])
-                                m.fit(x=x_train_batch, y=y_train_batch, epochs=n_epochs, verbose=False, batch_size=160000)
+                                m.fit(x=x_train_batch, y=y_train_batch, epochs=n_epochs, verbose=False, batch_size=50000)
                         
                         # TODO: test all functions w/o regenerating instance predictions
                         for pred_f, pred_f_name in zip(pred_fs, pred_f_names):
