@@ -114,13 +114,15 @@ for split_num in splits:
                         try:
                             hr_score = calc_hr(true_y, py_pred)
                             discrete_hr = calc_hr(true_y, py_pred, discretize=True)
+                            or_score = calc_or(test_y, py_pred)
                         except:
                             print("Error calculating HR")
                         print("HR: ", hr_score)
                         print("Discrete HR: ", discrete_hr)
+                        print("OR: ", or_score)
                         result_dict = {'y_mode': y_mode, 'epoch': i, 'model': model_name, 'instance': instance_opt, 
                                'pauc': auc_score, 'hr': hr_score, 'day_thresh': day_thresh, 'pred_f': pred_f_name,
-                               'split_num': split_num, 'discrete_hr': discrete_hr}
+                               'split_num': split_num, 'discrete_hr': discrete_hr, 'or': or_score}
                         result_dicts.append(result_dict)
                         pd.DataFrame(result_dicts).to_csv("cnn_all_parameters_df_3")
                         pd.DataFrame(result_dicts).to_csv("cnn_all_parameters_df_3_backup")

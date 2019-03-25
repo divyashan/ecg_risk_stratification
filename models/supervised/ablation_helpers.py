@@ -98,6 +98,12 @@ def calc_hr(true_y, pred_y, pctl=75, discretize=False):
     except:
         return np.exp(cph.hazards_['risk'])
 
+def calc_or(true_y, py_pred):
+    thresh = np.percentile(py_pred, 75)
+    high_risk = true_y[np.where(py_pred > thresh)[0]]
+    low_risk = true_y[np.where(py_pred <= thresh)[0]]
+    return np.mean(high_risk)/np.mean(low_risk)
+
 def get_preds(m, test_file, pred_f=np.mean, n_beats=3600):
     py_pred = []
     batch_size = 500
