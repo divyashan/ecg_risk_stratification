@@ -17,10 +17,33 @@ def build_cnn(img_shape):
 	initializer = glorot_normal()
 	x0 = Input( img_shape, name='Input')
 	pool_size = 4
-	x = Conv1D( 2, kernel_size=128, strides=2, activation='relu', padding='same')(x0)
+	x = Conv1D( 2, kernel_size=128, strides=2, activation='relu', padding='same', 
+                kernel_initializer = initializer,
+                kernel_regularizer=l2(0.01))(x0)
 	x = MaxPooling1D(pool_size)(x) 
 
-	x = Conv1D( 2, kernel_size=64, strides=2, activation='relu', padding='same')(x)
+	x = Conv1D( 2, kernel_size=64, strides=2, activation='relu', padding='same', 
+                kernel_initializer = initializer,
+                kernel_regularizer=l2(0.01))(x)
+	x = MaxPooling1D(pool_size)(x) 
+	x = Flatten()(x)
+
+	y = Dense( 1, name='softmax', activation='sigmoid')(x)
+	model = Model( inputs = x0, outputs = y )
+	return model
+
+def build_small_f_cnn(img_shape):
+	initializer = glorot_normal()
+	x0 = Input( img_shape, name='Input')
+	pool_size = 4
+	x = Conv1D( 10, kernel_size=10, strides=2, activation='relu', padding='same', 
+                kernel_initializer = initializer,
+                kernel_regularizer=l2(0.01))(x0)
+	x = MaxPooling1D(pool_size)(x) 
+
+	x = Conv1D( 5, kernel_size=5, strides=2, activation='relu', padding='same', 
+                kernel_initializer = initializer,
+                kernel_regularizer=l2(0.01))(x)
 	x = MaxPooling1D(pool_size)(x) 
 	x = Flatten()(x)
 

@@ -81,14 +81,14 @@ def thresh_labels(y, day_thresh):
     thresh_y = np.array([1 if (y_val < day_thresh and y_val > 0) else 0 for y_val in y])
     return thresh_y
 
-def calc_hr(true_y, pred_y, pctl=75):
+def calc_hr(true_y, pred_y, pctl=75, discretize=False):
     thresh = np.percentile(pred_y, pctl)
     dicts = []
     for d, pred in zip(true_y, pred_y):
         o = 1 if d > 0 else 0
         r = 1 if pred >= thresh else 0
-        # undiscretized
-        r = pred
+        if discretize==False:
+            r = pred
         dicts.append({'duration': d, 'observed': o, 'risk': r})
     data = pd.DataFrame(dicts)
     cph = CoxPHFitter()

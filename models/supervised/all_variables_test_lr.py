@@ -20,9 +20,10 @@ from ecg_AAAI.models.gpu_utils import restrict_GPU_keras
 from ecg_AAAI.models.supervised.ablation_helpers import *
 import warnings
 warnings.filterwarnings("error")
-
+restrict_GPU_keras("3")
+np.seterr(all="print")
 y_modes = ["mi", "cvd"]
-splits = ["0", "1", "2", "3", "4"]
+splits = ["4", "3", "2", "1", "0"]
 day_threshs = [30, 60, 90, 365]
 pred_fs = [np.mean, np.median, top_10_mean, top_20_mean]
 pred_f_names = ['mean', 'median', 'top_10_mean', 'top_20_mean']
@@ -51,7 +52,7 @@ for y_mode in y_modes:
         for split_num in splits:
             for instance_opt in instances:
                 print("\nEXPERIMENT PARAMS:")
-                print("y:", y_mode, "\tday_thresh:", day_thresh, '\t split_num: ', split_num)
+                print("y:", y_mode, "\tday_thresh:", day_thresh, '\t split_num: ', split_num, '\tinstance: ', instance_opt)
                 if train_file:
                     train_file.close()
                     test_file.close()
@@ -84,7 +85,7 @@ for y_mode in y_modes:
                         print("Finished loading Block #", j)
                         for k in range(n_batches):
                             x_train_neg, y_train_neg = get_block_batch(x_train_block, y_train_block, batch_size, k, n_beats=n_beats) 
-                            print("Finished loading Batch #", k)
+                            #print("Finished loading Batch #", k)
 
                             x_train_batch = np.concatenate([x_train_neg, x_train_pos])[:,:,0]
                             y_train_batch = np.concatenate([y_train_neg, y_train_pos])
@@ -103,15 +104,14 @@ for y_mode in y_modes:
                         hr_score = 0
                         try:
                             hr_score = calc_hr(true_y, py_pred)
-                            pdb.set_trace()
                         except:
                             print("Error calculating HR")
 
-                        result_dict = {'y_mode': y_mode, 'epoch': i, 'model': model_name, 
+                        result_dict = {'y_mode': y_mode, 'epoch': i, 'model': model_name, 'instance': instance_opt,  
                                        'pauc': auc_score, 'hr': hr_score, 'day_thresh': day_thresh, 'pred_f': pred_f_name,
                                        'split_num': split_num}
                         result_dicts.append(result_dict)
-                        pd.DataFrame(result_dicts).to_csv("restructured_training_df_9")
+                        pd.DataFrame(result_dicts).to_csv("lr_all_parameters_df_2")
                         
                         if plotting:
                             fig_path = get_fig_path(y_mode, day_thresh, split_num, model_name)

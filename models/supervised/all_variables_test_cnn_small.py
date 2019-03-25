@@ -16,7 +16,7 @@ sys.path.insert(0, '../')
 from ecg_AAAI.parse_dataset.readECG import loadECG
 from ecg_AAAI.models.supervised.ecg_fi_model_keras import build_fi_model 
 from ecg_AAAI.models.supervised.ecg_fc import build_fc_model
-from ecg_AAAI.models.supervised.ecg_cnn import build_cnn
+from ecg_AAAI.models.supervised.ecg_cnn import build_cnn, build_small_f_cnn
 from ecg_AAAI.models.gpu_utils import restrict_GPU_keras
 from ecg_AAAI.models.supervised.ablation_helpers import *
 restrict_GPU_keras("3")
@@ -82,9 +82,9 @@ for split_num in splits:
                 print("Batch size: ", batch_size)
                 
                 input_dim = x_train_pos.shape[-2]
-                m = build_cnn((input_dim, 1))
+                m = build_small_f_cnn((input_dim, 1))
                 m.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy']) 
-
+                pdb.set_trace()
                 for i in range(n_results):
                     for j in range(n_blocks):
                         x_train_block, y_train_block = get_block(train_file, j, block_size, y_mode, day_thresh, n_beats=n_beats)
