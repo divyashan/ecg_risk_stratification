@@ -79,7 +79,7 @@ for split_num in splits:
                         keep_idxs = np.random.choice(n_pos, int(n_train_opt*n_pos))
                         x_train_pos, y_train_pos = x_train_pos[keep_idxs], y_train_pos[keep_idxs]
                         n_train_pos = int(n_train_opt*n_pos)        
-                
+                                    
                          
                         x_train_pos = reshape_X(x_train_pos)
                         y_train_pos = np.array([[y_val]*n_beats for y_val in y_train_pos]).flatten()
@@ -92,7 +92,6 @@ for split_num in splits:
                         
                         m, embedding_m = build_fc_model((input_dim, 1), num_fc_0=n_fc_units, dtw_init=dtw_prior_flag)
                         m.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
-
 
                         keep_idxs = np.random.choice(block_size, int(n_train_opt*block_size))
                         for i in range(n_results):

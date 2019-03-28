@@ -19,7 +19,7 @@ from ecg_AAAI.models.supervised.ecg_fc import build_fc_model
 from ecg_AAAI.models.supervised.ecg_cnn import build_cnn, build_small_f_cnn
 from ecg_AAAI.models.gpu_utils import restrict_GPU_keras
 from ecg_AAAI.models.supervised.ablation_helpers import *
-restrict_GPU_keras("3")
+restrict_GPU_keras("0")
 import warnings
 warnings.filterwarnings("error")
 warnings.simplefilter("ignore", DeprecationWarning)
@@ -33,7 +33,7 @@ instances = ['four', 'one', 'two', 'three', 'four']
 split_prefix = "/home/divyas/ecg_AAAI/datasets/split_"
 fig_dir = "/home/divyas/ecg_AAAI/models/supervised/figs"
 
-model_name = "cnn"
+model_name = "small_filter_cnn"
 batch_size = 90
 day_thresh = 90
 n_epochs = 1
@@ -84,7 +84,6 @@ for split_num in splits:
                 input_dim = x_train_pos.shape[-2]
                 m = build_small_f_cnn((input_dim, 1))
                 m.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy']) 
-                pdb.set_trace()
                 for i in range(n_results):
                     for j in range(n_blocks):
                         x_train_block, y_train_block = get_block(train_file, j, block_size, y_mode, day_thresh, n_beats=n_beats)
@@ -114,7 +113,6 @@ for split_num in splits:
                         try:
                             hr_score = calc_hr(true_y, py_pred)
                             discrete_hr = calc_hr(true_y, py_pred, discretize=True)
-                            pdb.set_trace()
                             or_score = calc_or(test_y, py_pred)
                         except:
                             print("Error calculating HR")
@@ -124,8 +122,7 @@ for split_num in splits:
                                'pauc': auc_score, 'hr': hr_score, 'day_thresh': day_thresh, 'pred_f': pred_f_name,
                                'split_num': split_num, 'discrete_hr': discrete_hr, 'or': or_score}
                         result_dicts.append(result_dict)
-                        pd.DataFrame(result_dicts).to_csv("cnn_all_parameters_df_3")
-                        pd.DataFrame(result_dicts).to_csv("cnn_all_parameters_df_3_backup")
+                        pd.DataFrame(result_dicts).to_csv("small_cnn_all_parameters_df_with_or")
                         
                         if plotting:
                             fig_path = get_fig_path(y_mode, day_thresh, split_num, model_name)

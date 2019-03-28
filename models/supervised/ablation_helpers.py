@@ -1,12 +1,31 @@
 import numpy as np
 import pandas as pd
 import pdb
+from collections import Counter
 
 from lifelines import CoxPHFitter
 import warnings
 warnings.filterwarnings("error")
 
 fig_dir = "/home/divyas/ecg_AAAI/models/supervised/figs"
+
+def get_class_weights(y, smooth_factor=0):
+    """
+    Returns the weights for each class based on the frequencies of the samples
+    :param smooth_factor: factor that smooths extremely uneven weights
+    :param y: list of true labels (the labels must be hashable)
+    :return: dictionary with the weight for each class
+    """
+    counter = Counter(y)
+
+    if smooth_factor > 0:
+        p = max(counter.values()) * smooth_factor
+        for k in counter.keys():
+            counter[k] += p
+
+    majority = max(counter.values())
+
+    return {cls: float(majority / count) for cls, count in counter.items()}
 
 def get_fig_path(y_mode, day_thresh, split_num, model_name):
     return fig_dir + "/" + y_mode + "/" + str(day_thresh) + "/split_" + split_num + "/" + model_name
